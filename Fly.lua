@@ -1,69 +1,58 @@
-local player = game.Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
-local root = char:WaitForChild("HumanoidRootPart")
-local camera = workspace.CurrentCamera
+-- HiuFire ESP System
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
 
-local flying = false
-local speed = 50
+-- Hàm tạo ESP cho từng người chơi
+local function createESP(player)
+	if player == LocalPlayer then return end
 
-local screenGui = Instance.new("ScreenGui", player.PlayerGui)
-screenGui.Name = "HiuFireFlyGui"
+	local function addHighlight()
+		-- Chờ nhân vật load xong
+		local char = player.Character or player.CharacterAdded:Wait()
+		
+		-- 1. Tạo Highlight (Khung viền xuyên tường)
+		if not char:FindFirstChild("HiuFireESP") then
+			local highlight = Instance.new("Highlight")
+			highlight.Name = "HiuFireESP"
+			highlight.Parent = char
+			highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Màu đỏ lửa
+			highlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- Viền trắng
+			highlight.FillTransparency = 0.5 -- Độ trong suốt
+			highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		end
 
-local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0, 120, 0, 60)
-frame.Position = UDim2.new(0.5, -60, 0.75, 0)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BorderSizePixel = 0
+		-- 2. Tạo BillboardGui (Hiện tên trên đầu)
+		local head = char:WaitForChild("Head", 5)
+		if head and not head:FindFirstChild("HiuFireName") then
+			local bgui = Instance.new("BillboardGui")
+			bgui.Name = "HiuFireName"
+			bgui.Adornee = head
+			bgui.Size = UDim2.new(0, 100, 0, 50)
+			bgui.StudsOffset = Vector3.new(0, 2, 0)
+			bgui.AlwaysOnTop = true
+			bgui.Parent = head
 
-local corner = Instance.new("UICorner", frame)
+			local tl = Instance.new("TextLabel")
+			tl.BackgroundTransparency = 1
+			tl.Size = UDim2.new(1, 0, 1, 0)
+			tl.Text = player.Name
+			tl.TextColor3 = Color3.fromRGB(255, 255, 0) -- Màu vàng rực
+			tl.TextScaled = true
+			tl.Font = Enum.Font.BlackOpsOne -- Font chữ ngầu
+			tl.Parent = bgui
+		end
+	end
 
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0.4, 0)
-title.Text = "Hiu Fire"
-title.TextColor3 = Color3.fromRGB(255, 100, 0) -- Màu lửa
-title.BackgroundTransparency = 1
-title.Font = Enum.Font.GothamBold
-title.TextSize = 14
+	-- Chạy khi nhân vật hồi sinh
+	player.CharacterAdded:Connect(addHighlight)
+	if player.Character then addHighlight() end
+end
 
-local flyButton = Instance.new("TextButton", frame)
-flyButton.Size = UDim2.new(0.8, 0, 0.4, 0)
-flyButton.Position = UDim2. Fleming2.new(0.1, 0, 0.5, 0)
-flyButton.Position = UDim2.new(0.1, 0, 0.5, 0)
-flyButton.Text = "Fly: OFF"
-flyButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-flyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-flyButton.Font = Enum.Font.Gotham
+-- Áp dụng cho tất cả người chơi hiện tại và người mới vào
+for _, p in pairs(Players:GetPlayers()) do
+	createESP(p)
+end
+Players.PlayerAdded:Connect(createESP)
 
-local btnCorner = Instance.new("UICorner", flyButton)
-
-local bg, bv
-flyButton.MouseButton1Click:Connect(function()
-    flying = not flying
-    
-    if flying then
-        flyButton.Text = "Fly: ON"
-        flyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-        
-        bg = Instance.new("BodyGyro", root)
-        bg.P = 9e4
-        bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-        bg.cframe = root.CFrame
-        
-        bv = Instance.new("BodyVelocity", root)
-        bv.velocity = Vector3.new(0, 0, 0)
-        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-        
-        task.spawn(function()
-            while flying do
-                task.wait()
-                bv.velocity = camera.CFrame.LookVector * speed
-                bg.cframe = camera.CFrame
-            end
-            if bg then bg:Destroy() end
-            if bv then bv:Destroy() end
-        end)
-    else
-        flyButton.Text = "Fly: OFF"
-        flyButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-    end
-end)
+print("HiuFire ESP v1.0 da kich hoat!")
